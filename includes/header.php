@@ -2,22 +2,30 @@
     <div class="container">
         <div class="header-content">
             <a href="index.php" class="logo">
-                <div class="logo-icon">
-                    <img src="assets/images/logo.svg" alt="AirVision" style="height: 32px;">
-                </div>
-                AirVision
+                <img src="assets/images/logo.svg" alt="AirVision Logo" class="brand-logo">
+                <span>AirVision</span>
             </a>
+
+            <nav id="nav">
+                <a href="index.php#beranda" class="nav-link">Beranda</a>
+                <a href="index.php#teknologi" class="nav-link">Teknologi</a>
+                <a href="index.php#edukasi" class="nav-link">Wawasan</a>
+                
+<a href="dashboard.php" class="nav-btn-dashboard">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+                
+                <button id="theme-toggle" class="btn-theme" title="Ganti Tema">
+                    <i class="fas fa-sun"></i>
+                </button>
+                
+                <a href="index.php#analisis" class="btn-nav">Live Demo</a>
+            </nav>
+            
             <button class="mobile-menu-btn" onclick="toggleMenu()">
                 <i class="fas fa-bars"></i>
             </button>
-            <nav id="nav">
-                <a href="index.php#cara-kerja">Cara Kerja</a>
-                <a href="index.php#fitur">Fitur</a>
-                <a href="dashboard.php" class="btn-secondary">
-                    <i class="fas fa-chart-line"></i> Dashboard 
-                </a>
-                <a href="index.php#analisis" class="btn-primary">Coba Sekarang</a>
-            </nav>
         </div>
     </div>
 </header>

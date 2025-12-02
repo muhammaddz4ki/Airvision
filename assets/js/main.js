@@ -1,28 +1,109 @@
-// main.js - Landing Page Logic
+// main.js - AirVision Core Logic
 
-let currentFileUrl = null;
-
-// Header scroll effect
-window.addEventListener('scroll', function() {
-    const header = document.getElementById('header');
-    if (header) {
-        if (window.scrollY > 50) header.classList.add('scrolled');
-        else header.classList.remove('scrolled');
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
+    initScrollEffects();
+    initCounter();
+    initFAQ();
+    initFileUpload();
 });
 
-// Mobile menu
-function toggleMenu() {
-    const nav = document.getElementById('nav');
-    if (nav) nav.classList.toggle('active');
+// --- 1. THEME SWITCHER (DARK/LIGHT) ---
+function initTheme() {
+    const themeBtn = document.getElementById('theme-toggle');
+    const htmlTag = document.documentElement;
+    const icon = themeBtn.querySelector('i');
+
+    // Cek Local Storage
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    htmlTag.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme, icon);
+
+    themeBtn.addEventListener('click', () => {
+        const currentTheme = htmlTag.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        htmlTag.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        updateThemeIcon(newTheme, icon);
+    });
 }
 
-// --- GPS LOCATION LOGIC (AUTO CITY DETECT) ---
+function updateThemeIcon(theme, icon) {
+    if (theme === 'dark') {
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+    } else {
+        icon.classList.remove('fa-sun');
+        icon.classList.add('fa-moon');
+    }
+}
+
+// --- 2. HEADER SCROLL & MOBILE MENU ---
+function initScrollEffects() {
+    window.addEventListener('scroll', () => {
+        const header = document.getElementById('header');
+        if (window.scrollY > 50) header.classList.add('scrolled');
+        else header.classList.remove('scrolled');
+    });
+}
+
+function toggleMenu() {
+    const nav = document.getElementById('nav');
+    nav.classList.toggle('active');
+}
+
+// --- 3. STATS COUNTER ---
+function initCounter() {
+    const counters = document.querySelectorAll('.counter');
+    const statsSection = document.querySelector('.stats-section');
+    let started = false;
+
+    if (!statsSection) return;
+
+    window.addEventListener('scroll', () => {
+        if (window.scrollY >= statsSection.offsetTop - 500 && !started) {
+            counters.forEach(counter => {
+                const target = +counter.getAttribute('data-target');
+                const inc = target / 50; // Speed
+                let count = 0;
+                
+                const updateCount = () => {
+                    count += inc;
+                    if (count < target) {
+                        counter.innerText = Math.ceil(count);
+                        setTimeout(updateCount, 30);
+                    } else {
+                        counter.innerText = target;
+                    }
+                };
+                updateCount();
+            });
+            started = true;
+        }
+    });
+}
+
+// --- 4. FAQ LOGIC ---
+function initFAQ() {
+    const faqItems = document.querySelectorAll('.faq-item');
+    faqItems.forEach(item => {
+        const question = item.querySelector('.faq-question');
+        question.addEventListener('click', () => {
+            // Tutup yang lain dulu
+            faqItems.forEach(i => { 
+                if(i !== item) i.classList.remove('active'); 
+            });
+            item.classList.toggle('active');
+        });
+    });
+}
+
+// --- 5. GPS LOCATION ---
 function getLocation() {
     const btn = document.getElementById('btn-gps');
-    
     if (navigator.geolocation) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         navigator.geolocation.getCurrentPosition(showPosition, showErrorGPS);
     } else {
         alert("Browser Anda tidak mendukung Geolocation.");
@@ -34,193 +115,177 @@ function showPosition(position) {
     const lon = position.coords.longitude;
     const btn = document.getElementById('btn-gps');
 
-    // Reverse Geocoding (Gratis via OpenStreetMap)
     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
         .then(response => response.json())
         .then(data => {
-            const city = data.address.city || data.address.town || data.address.village || data.address.county || "Lokasi Terdeteksi";
-            const input = document.getElementById('locationInput');
-            if(input) input.value = city;
-            
-            btn.innerHTML = '<i class="fas fa-check"></i> Berhasil';
-            btn.classList.add('success');
-            setTimeout(() => {
-                btn.innerHTML = '<i class="fas fa-map-marker-alt"></i> Gunakan GPS';
-                btn.classList.remove('success');
-            }, 3000);
+            const city = data.address.city || data.address.town || data.address.county || "Lokasi Terdeteksi";
+            document.getElementById('locationInput').value = city;
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            setTimeout(() => { btn.innerHTML = '<i class="fas fa-crosshairs"></i>'; }, 3000);
         })
-        .catch(error => {
-            console.error(error);
-            const input = document.getElementById('locationInput');
-            if(input) input.value = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-            btn.innerHTML = '<i class="fas fa-check"></i> Koordinat';
+        .catch(() => {
+            document.getElementById('locationInput').value = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+            btn.innerHTML = '<i class="fas fa-check"></i>';
         });
 }
 
 function showErrorGPS(error) {
-    let msg = "Gagal mengambil lokasi.";
-    switch(error.code) {
-        case error.PERMISSION_DENIED: msg = "Izin GPS ditolak."; break;
-        case error.POSITION_UNAVAILABLE: msg = "Info lokasi tidak tersedia."; break;
-        case error.TIMEOUT: msg = "Waktu permintaan habis."; break;
+    alert("Gagal mengambil lokasi. Pastikan GPS aktif.");
+    document.getElementById('btn-gps').innerHTML = '<i class="fas fa-crosshairs"></i>';
+}
+
+// --- 6. FILE UPLOAD & PREDICTION ---
+let currentFileUrl = null;
+
+function initFileUpload() {
+    const fileInput = document.getElementById('fileInput');
+    const uploadBox = document.getElementById('uploadBox');
+    const uploadForm = document.getElementById('uploadForm');
+
+    if (uploadBox && fileInput) {
+        uploadBox.addEventListener('click', () => fileInput.click());
+        
+        // Drag & Drop
+        uploadBox.addEventListener('dragover', (e) => { e.preventDefault(); uploadBox.style.borderColor = 'var(--primary)'; });
+        uploadBox.addEventListener('dragleave', (e) => { e.preventDefault(); uploadBox.style.borderColor = 'var(--border-color)'; });
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadBox.style.borderColor = 'var(--border-color)';
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+
+        fileInput.addEventListener('change', function() {
+            if (this.files.length) handleFile(this.files[0]);
+        });
     }
-    alert(msg);
-    document.getElementById('btn-gps').innerHTML = '<i class="fas fa-map-marker-alt"></i> Gunakan GPS';
+
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!fileInput.files[0]) { alert('Pilih foto terlebih dahulu!'); return; }
+            
+            const btn = document.querySelector('.btn-analyze');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menganalisis...';
+            btn.disabled = true;
+
+            const formData = new FormData(this);
+            
+            // Fetch ke Python API
+            fetch('http://127.0.0.1:5000/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) showModal({ is_sky: false, error: data.error });
+                else showModal(data, currentFileUrl);
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Gagal terhubung ke Server API. Pastikan api.py berjalan.");
+            })
+            .finally(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        });
+    }
 }
 
-// --- FILE UPLOAD LOGIC ---
-const fileInput = document.getElementById('fileInput');
-const uploadBox = document.getElementById('uploadBox');
-const filePreview = document.getElementById('filePreview');
-const fileName = document.getElementById('fileName');
-
-if (fileInput) {
-    fileInput.addEventListener('change', function(e) {
-        if (this.files && this.files[0]) {
-            const file = this.files[0];
-            if (file.size > 5 * 1024 * 1024) {
-                alert('Ukuran file terlalu besar! Maksimal 5MB.');
-                this.value = ''; return;
-            }
-            if (!file.type.match('image/jpeg') && !file.type.match('image/png')) {
-                alert('Format file harus JPG atau PNG.');
-                this.value = ''; return;
-            }
-            if (currentFileUrl) URL.revokeObjectURL(currentFileUrl);
-            currentFileUrl = URL.createObjectURL(file);
-            fileName.textContent = file.name;
-            filePreview.classList.add('active');
-            uploadBox.style.display = 'none';
-        }
-    });
-}
-
-if (uploadBox) {
-    // Drag & Drop
-    uploadBox.addEventListener('dragover', (e) => { e.preventDefault(); uploadBox.classList.add('dragover'); });
-    uploadBox.addEventListener('dragleave', (e) => { e.preventDefault(); uploadBox.classList.remove('dragover'); });
-    uploadBox.addEventListener('drop', (e) => {
-        e.preventDefault(); uploadBox.classList.remove('dragover');
-        if (e.dataTransfer.files.length > 0) {
-            fileInput.files = e.dataTransfer.files;
-            fileInput.dispatchEvent(new Event('change'));
-        }
-    });
+function handleFile(file) {
+    const fileNameSpan = document.getElementById('fileName');
+    const filePreview = document.getElementById('filePreview');
+    const uploadBox = document.getElementById('uploadBox');
+    
+    if (file.size > 5 * 1024 * 1024) { alert('Maksimal 5MB'); return; }
+    if (!file.type.match('image.*')) { alert('Harus format gambar (JPG/PNG)'); return; }
+    
+    fileNameSpan.textContent = file.name;
+    filePreview.classList.add('active');
+    uploadBox.style.display = 'none';
+    
+    if (currentFileUrl) URL.revokeObjectURL(currentFileUrl);
+    currentFileUrl = URL.createObjectURL(file);
 }
 
 function removeFile() {
-    if(fileInput) fileInput.value = '';
-    if(filePreview) filePreview.classList.remove('active');
-    if(uploadBox) uploadBox.style.display = 'block';
-    if (currentFileUrl) { URL.revokeObjectURL(currentFileUrl); currentFileUrl = null; }
+    document.getElementById('fileInput').value = '';
+    document.getElementById('filePreview').classList.remove('active');
+    document.getElementById('uploadBox').style.display = 'flex';
 }
 
-// --- MODAL DISPLAY LOGIC ---
+// --- 7. MODAL RESULT (4 KATEGORI LENGKAP) ---
 const modalOverlay = document.getElementById('resultModal');
 
-function showModal(result, imageUrl) {
+function showModal(result, imgUrl) {
     const iconDiv = document.getElementById('modalIcon');
     const title = document.getElementById('modalTitle');
     const desc = document.getElementById('modalDescription');
-    const label = document.getElementById('modalResultLabel');
+    const fill = document.getElementById('confidenceFill');
+    const scoreTxt = document.getElementById('modalConfidence');
     
-    // Reset classes
-    iconDiv.className = 'modal-icon';
-    label.className = 'modal-result-label';
+    if (imgUrl) document.getElementById('modalResultImage').src = imgUrl;
+    
+    // Reset Style
+    iconDiv.className = 'modal-status-icon';
+    document.getElementById('scanLine').classList.add('active');
+    setTimeout(() => document.getElementById('scanLine').classList.remove('active'), 2000);
 
-    // Image
-    if (imageUrl) {
-        document.getElementById('modalResultImage').src = imageUrl;
-        document.getElementById('modalImageContainer').style.display = 'block';
-    }
-
-    // Error handling inside modal
+    // --- LOGIC HANDLING ---
     if (result.is_sky === false) {
+        // ERROR / BUKAN LANGIT
         iconDiv.innerHTML = '<i class="fas fa-times"></i>';
         iconDiv.classList.add('error');
-        title.innerText = 'Bukan Langit';
-        document.getElementById('modalResult').innerText = 'Analisis Gagal';
-        desc.innerText = result.error || 'Gambar tidak terdeteksi sebagai foto langit.';
-        modalOverlay.classList.add('active');
-        return;
-    }
-
-    // Success Logic
-    label.innerText = result.class_name;
-    document.getElementById('modalResult').innerText = `Status: ${result.class_name}`;
-    document.getElementById('modalLocation').innerText = `📍 ${result.location || 'Tidak Diketahui'}`;
-    document.getElementById('modalConfidence').innerText = `Akurasi AI: ${(result.score * 100).toFixed(1)}%`;
-
-    if (result.class_name === 'Baik') {
-        iconDiv.innerHTML = '<i class="fas fa-sun"></i>';
-        iconDiv.classList.add('good');
-        label.classList.add('good');
-        title.innerText = 'Udara Bersih';
-        desc.innerText = 'Langit cerah. Polusi sangat rendah. Waktu terbaik untuk olahraga outdoor.';
-    } else if (result.class_name === 'Sedang') {
-        iconDiv.innerHTML = '<i class="fas fa-cloud"></i>';
-        iconDiv.classList.add('medium');
-        label.classList.add('medium');
-        title.innerText = 'Udara Standar';
-        desc.innerText = 'Langit agak keruh. Aman bagi sebagian besar orang, kurangi aktivitas berat bagi yang sensitif.';
+        title.innerText = "Analisis Ditolak";
+        desc.innerText = result.error || "Objek dalam foto bukan langit.";
+        fill.style.width = '0%'; fill.style.background = 'var(--danger)';
+        scoreTxt.innerText = '0%';
     } else {
-        iconDiv.innerHTML = '<i class="fas fa-smog"></i>';
-        iconDiv.classList.add('bad');
-        label.classList.add('bad');
-        title.innerText = 'Udara Kotor';
-        desc.innerText = 'Polusi tinggi. Langit keruh/berkabut. Gunakan masker jika keluar ruangan.';
+        // SUCCESS PREDICTION
+        const score = (result.score * 100).toFixed(1) + '%';
+        fill.style.width = score;
+        scoreTxt.innerText = score;
+        document.getElementById('modalLocation').innerText = result.location || '-';
+
+        // 1. BAIK
+        if (result.class_name === 'Baik') {
+            iconDiv.innerHTML = '<i class="fas fa-smile-beam"></i>';
+            iconDiv.classList.add('good');
+            fill.style.background = 'var(--success)';
+            title.innerText = "Udara Bersih (Baik)";
+            desc.innerText = "Kualitas udara sangat baik. Aman untuk beraktivitas di luar ruangan.";
+        } 
+        // 2. SEDANG
+        else if (result.class_name === 'Sedang') {
+            iconDiv.innerHTML = '<i class="fas fa-meh"></i>';
+            iconDiv.classList.add('medium');
+            fill.style.background = 'var(--warning)';
+            title.innerText = "Udara Sedang";
+            desc.innerText = "Kualitas udara cukup baik, namun terdapat sedikit polusi. Aman bagi mayoritas orang.";
+        } 
+        // 3. TIDAK SEHAT BAGI SEBAGIAN ORANG (FULL TEXT)
+        else if (result.class_name === 'Tidak Sehat Bagi Sebagian Orang') {
+            iconDiv.innerHTML = '<i class="fas fa-head-side-mask"></i>';
+            iconDiv.classList.add('sensitive');
+            fill.style.background = 'var(--sensitive)';
+            title.innerText = "Tidak Sehat Bagi Sebagian Orang";
+            desc.innerText = "Udara ini beresiko bagi kelompok rentan seperti lansia, anak-anak, dan penderita penyakit pernapasan. Kurangi aktivitas berat.";
+        } 
+        // 4. TIDAK SEHAT
+        else {
+            iconDiv.innerHTML = '<i class="fas fa-biohazard"></i>';
+            iconDiv.classList.add('bad');
+            fill.style.background = 'var(--danger)';
+            title.innerText = "Udara Tidak Sehat";
+            desc.innerText = "Tingkat polusi tinggi. Berbahaya bagi kesehatan. Wajib gunakan masker jika keluar ruangan.";
+        }
     }
-
+    
     modalOverlay.classList.add('active');
-}
-
-function showModalError(msg) {
-    alert(msg);
 }
 
 function closeModal() {
     modalOverlay.classList.remove('active');
     removeFile();
-}
-
-const closeModalBtn = document.getElementById('modalCloseBtn');
-if(closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
-
-// --- FORM SUBMISSION ---
-const uploadForm = document.getElementById('uploadForm');
-if(uploadForm) {
-    uploadForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        if (!fileInput.files[0]) { alert('Pilih file dulu!'); return; }
-
-        const btn = document.querySelector('.btn-analyze');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menganalisis...';
-        btn.disabled = true;
-
-        const formData = new FormData(this);
-        
-        // POINT TO YOUR PYTHON API
-        fetch('http://127.0.0.1:5000/predict', {
-            method: 'POST',
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.error) {
-                // Handle logic error from API
-                showModal({ is_sky: false, error: data.error }, currentFileUrl);
-            } else {
-                showModal(data, currentFileUrl);
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            showModalError("Gagal terhubung ke Server AI. Pastikan 'api.py' berjalan di terminal.");
-        })
-        .finally(() => {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        });
-    });
 }
