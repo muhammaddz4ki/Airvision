@@ -7,12 +7,12 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <link rel="stylesheet" href="assets/css/dashboard.css">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
@@ -72,9 +72,7 @@
 
                 <div class="charts-grid">
                     <div class="chart-container">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                            <h3>Tren Kualitas Udara (7 Hari)</h3>
-                        </div>
+                        <h3>Tren Kualitas Udara (7 Hari)</h3>
                         <div style="height: 300px;"><canvas id="dailyChart"></canvas></div>
                     </div>
                     <div class="chart-container">
@@ -115,14 +113,13 @@
                         <h3><i class="fas fa-filter"></i> Data Lengkap & Export</h3>
                         <div class="export-buttons" style="display: flex; gap: 10px;">
                             <button onclick="exportToCSV()" class="btn-primary" style="background: #10b981; font-size: 0.85rem;">
-                                <i class="fas fa-file-csv"></i> Export CSV
+                                <i class="fas fa-file-csv"></i> CSV
                             </button>
                             <button onclick="exportToPDF()" class="btn-primary" style="background: #ef4444; font-size: 0.85rem;">
-                                <i class="fas fa-file-pdf"></i> Export PDF
+                                <i class="fas fa-file-pdf"></i> PDF
                             </button>
                         </div>
                     </div>
-                    
                     <div class="filter-grid">
                         <div class="filter-group">
                             <label class="filter-label">Cari Lokasi</label>
@@ -137,7 +134,7 @@
                                 <option value="">Semua Kategori</option>
                                 <option value="Baik">Baik</option>
                                 <option value="Sedang">Sedang</option>
-                                <option value="Tidak Sehat Bagi Sebagian Orang">Tidak Sehat Bagi Sebagian Orang</option>
+                                <option value="Tidak Sehat Bagi Sebagian Orang">Sensitif</option>
                                 <option value="Tidak Sehat">Tidak Sehat</option>
                                 <option value="Bukan Langit">Invalid</option>
                             </select>
@@ -145,7 +142,7 @@
                         <div class="filter-group">
                             <label class="filter-label" style="opacity:0">Aksi</label>
                             <button class="btn-primary" style="width:100%" onclick="applyFilters()">
-                                <i class="fas fa-check"></i> Terapkan Filter
+                                <i class="fas fa-check"></i> Filter
                             </button>
                         </div>
                     </div>
@@ -157,6 +154,7 @@
                             <thead style="position: sticky; top: 0; z-index: 10;">
                                 <tr>
                                     <th>ID</th>
+                                    <th>Gambar</th>
                                     <th>Waktu</th>
                                     <th>Lokasi</th>
                                     <th>Klasifikasi</th>
@@ -176,13 +174,25 @@
 
             <div id="locations-section" style="display: none;">
                 <div class="location-map">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                        <h3><i class="fas fa-globe-asia"></i> Peta Kualitas Udara Real-time</h3>
-                        <div class="map-legend">
-                            <span class="badge-good">● Baik</span>
-                            <span class="badge-medium">● Sedang</span>
-                            <span class="badge-sensitive">● Sensitif</span>
-                            <span class="badge-bad">● Bahaya</span>
+                    <div class="map-header-container">
+                        <h3><i class="fas fa-globe-asia"></i> Peta Sebaran Kualitas Udara</h3>
+                        
+                        <div class="map-legend-bar">
+                            <div class="legend-item">
+                                <span class="dot good"></span> Baik
+                            </div>
+                            <div class="legend-item">
+                                <span class="dot medium"></span> Sedang
+                            </div>
+                            <div class="legend-item">
+                                <span class="dot sensitive"></span> Sensitif
+                            </div>
+                            <div class="legend-item">
+                                <span class="dot bad"></span> Bahaya
+                            </div>
+                            <div class="legend-item">
+                                <span class="dot invalid"></span> Invalid
+                            </div>
                         </div>
                     </div>
                     <div id="map"></div>

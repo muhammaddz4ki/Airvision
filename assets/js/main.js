@@ -10,23 +10,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- 1. THEME SWITCHER (DARK/LIGHT) ---
 function initTheme() {
-    const themeBtn = document.getElementById('theme-toggle');
+    const themeBtn = document.getElementById('themeToggle'); // Sesuaikan ID dgn HTML
     const htmlTag = document.documentElement;
-    const icon = themeBtn.querySelector('i');
+    const icon = themeBtn ? themeBtn.querySelector('i') : null;
 
     // Cek Local Storage
     const savedTheme = localStorage.getItem('theme') || 'light';
     htmlTag.setAttribute('data-theme', savedTheme);
-    updateThemeIcon(savedTheme, icon);
+    if(icon) updateThemeIcon(savedTheme, icon);
 
-    themeBtn.addEventListener('click', () => {
-        const currentTheme = htmlTag.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        
-        htmlTag.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        updateThemeIcon(newTheme, icon);
-    });
+    if(themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const currentTheme = htmlTag.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            htmlTag.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            if(icon) updateThemeIcon(newTheme, icon);
+        });
+    }
 }
 
 function updateThemeIcon(theme, icon) {
@@ -42,15 +44,24 @@ function updateThemeIcon(theme, icon) {
 // --- 2. HEADER SCROLL & MOBILE MENU ---
 function initScrollEffects() {
     window.addEventListener('scroll', () => {
-        const header = document.getElementById('header');
-        if (window.scrollY > 50) header.classList.add('scrolled');
-        else header.classList.remove('scrolled');
+        const header = document.getElementById('mainHeader'); // Sesuaikan ID dgn HTML
+        if(header) {
+            if (window.scrollY > 50) header.classList.add('scrolled');
+            else header.classList.remove('scrolled');
+        }
     });
-}
-
-function toggleMenu() {
-    const nav = document.getElementById('nav');
-    nav.classList.toggle('active');
+    
+    // Mobile Menu
+    const mobileBtn = document.querySelector('.mobile-menu-btn');
+    const nav = document.querySelector('nav');
+    if(mobileBtn && nav) {
+        mobileBtn.addEventListener('click', () => {
+            nav.classList.toggle('active');
+            const icon = mobileBtn.querySelector('i');
+            if(nav.classList.contains('active')) icon.classList.replace('fa-bars', 'fa-times');
+            else icon.classList.replace('fa-times', 'fa-bars');
+        });
+    }
 }
 
 // --- 3. STATS COUNTER ---
@@ -65,7 +76,7 @@ function initCounter() {
         if (window.scrollY >= statsSection.offsetTop - 500 && !started) {
             counters.forEach(counter => {
                 const target = +counter.getAttribute('data-target');
-                const inc = target / 50; // Speed
+                const inc = target / 50; 
                 let count = 0;
                 
                 const updateCount = () => {
@@ -89,49 +100,38 @@ function initFAQ() {
     const faqItems = document.querySelectorAll('.faq-item');
     faqItems.forEach(item => {
         const question = item.querySelector('.faq-question');
-        question.addEventListener('click', () => {
-            // Tutup yang lain dulu
-            faqItems.forEach(i => { 
-                if(i !== item) i.classList.remove('active'); 
+        if(question) {
+            question.addEventListener('click', () => {
+                faqItems.forEach(i => { if(i !== item) i.classList.remove('active'); });
+                item.classList.toggle('active');
             });
-            item.classList.toggle('active');
-        });
+        }
     });
 }
 
 // --- 5. GPS LOCATION ---
 function getLocation() {
     const btn = document.getElementById('btn-gps');
+    const input = document.getElementById('locationInput');
+    
     if (navigator.geolocation) {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        navigator.geolocation.getCurrentPosition(showPosition, showErrorGPS);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude.toFixed(4);
+                const lon = position.coords.longitude.toFixed(4);
+                input.value = `${lat}, ${lon}`;
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => { btn.innerHTML = '<i class="fas fa-crosshairs"></i>'; }, 3000);
+            }, 
+            () => {
+                alert("Gagal mengambil lokasi. Pastikan GPS aktif.");
+                btn.innerHTML = '<i class="fas fa-crosshairs"></i>';
+            }
+        );
     } else {
-        alert("Browser Anda tidak mendukung Geolocation.");
+        alert("Browser tidak mendukung Geolocation.");
     }
-}
-
-function showPosition(position) {
-    const lat = position.coords.latitude;
-    const lon = position.coords.longitude;
-    const btn = document.getElementById('btn-gps');
-
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
-        .then(response => response.json())
-        .then(data => {
-            const city = data.address.city || data.address.town || data.address.county || "Lokasi Terdeteksi";
-            document.getElementById('locationInput').value = city;
-            btn.innerHTML = '<i class="fas fa-check"></i>';
-            setTimeout(() => { btn.innerHTML = '<i class="fas fa-crosshairs"></i>'; }, 3000);
-        })
-        .catch(() => {
-            document.getElementById('locationInput').value = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-            btn.innerHTML = '<i class="fas fa-check"></i>';
-        });
-}
-
-function showErrorGPS(error) {
-    alert("Gagal mengambil lokasi. Pastikan GPS aktif.");
-    document.getElementById('btn-gps').innerHTML = '<i class="fas fa-crosshairs"></i>';
 }
 
 // --- 6. FILE UPLOAD & PREDICTION ---
@@ -146,12 +146,16 @@ function initFileUpload() {
         uploadBox.addEventListener('click', () => fileInput.click());
         
         // Drag & Drop
-        uploadBox.addEventListener('dragover', (e) => { e.preventDefault(); uploadBox.style.borderColor = 'var(--primary)'; });
-        uploadBox.addEventListener('dragleave', (e) => { e.preventDefault(); uploadBox.style.borderColor = 'var(--border-color)'; });
+        uploadBox.addEventListener('dragover', (e) => { e.preventDefault(); uploadBox.style.borderColor = 'var(--primary)'; uploadBox.style.background = 'rgba(59,130,246,0.05)'; });
+        uploadBox.addEventListener('dragleave', (e) => { e.preventDefault(); uploadBox.style.borderColor = 'var(--border-color)'; uploadBox.style.background = 'var(--input-bg)'; });
         uploadBox.addEventListener('drop', (e) => {
             e.preventDefault();
             uploadBox.style.borderColor = 'var(--border-color)';
-            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            uploadBox.style.background = 'var(--input-bg)';
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFile(e.dataTransfer.files[0]);
+            }
         });
 
         fileInput.addEventListener('change', function() {
@@ -171,15 +175,19 @@ function initFileUpload() {
 
             const formData = new FormData(this);
             
-            // Fetch ke Python API
             fetch('http://127.0.0.1:5000/predict', {
                 method: 'POST',
                 body: formData
             })
             .then(res => res.json())
             .then(data => {
-                if (data.error) showModal({ is_sky: false, error: data.error });
-                else showModal(data, currentFileUrl);
+                // --- PERBAIKAN PENTING DI SINI ---
+                // Selalu kirim currentFileUrl agar gambar preview tetap muncul meski error
+                // API mengembalikan image_url, tapi untuk preview cepat kita pakai blob lokal (currentFileUrl)
+                // Jika API sukses mengembalikan image_url, kita bisa pakai itu juga.
+                // Prioritas: Blob Lokal (Lebih Cepat & Pasti Jalan)
+                
+                showModal(data, currentFileUrl);
             })
             .catch(err => {
                 console.error(err);
@@ -203,19 +211,28 @@ function handleFile(file) {
     
     fileNameSpan.textContent = file.name;
     filePreview.classList.add('active');
+    filePreview.style.display = 'flex'; // Paksa display flex
     uploadBox.style.display = 'none';
     
     if (currentFileUrl) URL.revokeObjectURL(currentFileUrl);
     currentFileUrl = URL.createObjectURL(file);
 }
 
-function removeFile() {
-    document.getElementById('fileInput').value = '';
-    document.getElementById('filePreview').classList.remove('active');
-    document.getElementById('uploadBox').style.display = 'flex';
+// Global function agar bisa dipanggil onclick di HTML
+window.removeFile = function() {
+    const fileInput = document.getElementById('fileInput');
+    const filePreview = document.getElementById('filePreview');
+    const uploadBox = document.getElementById('uploadBox');
+    
+    if(fileInput) fileInput.value = '';
+    if(filePreview) {
+        filePreview.classList.remove('active');
+        filePreview.style.display = 'none';
+    }
+    if(uploadBox) uploadBox.style.display = 'flex';
 }
 
-// --- 7. MODAL RESULT (4 KATEGORI LENGKAP) ---
+// --- 7. MODAL RESULT ---
 const modalOverlay = document.getElementById('resultModal');
 
 function showModal(result, imgUrl) {
@@ -224,13 +241,24 @@ function showModal(result, imgUrl) {
     const desc = document.getElementById('modalDescription');
     const fill = document.getElementById('confidenceFill');
     const scoreTxt = document.getElementById('modalConfidence');
+    const modalImg = document.getElementById('modalResultImage');
     
-    if (imgUrl) document.getElementById('modalResultImage').src = imgUrl;
-    
+    // --- FIX GAMBAR: Pakai Blob URL lokal jika ada, fallback ke API ---
+    if (imgUrl) {
+        modalImg.src = imgUrl;
+        modalImg.style.display = 'block';
+    } else if (result.image_url) {
+        modalImg.src = `http://127.0.0.1:5000/${result.image_url}`;
+        modalImg.style.display = 'block';
+    }
+
     // Reset Style
     iconDiv.className = 'modal-status-icon';
-    document.getElementById('scanLine').classList.add('active');
-    setTimeout(() => document.getElementById('scanLine').classList.remove('active'), 2000);
+    const scanLine = document.getElementById('scanLine');
+    if(scanLine) {
+        scanLine.classList.add('active');
+        setTimeout(() => scanLine.classList.remove('active'), 2000);
+    }
 
     // --- LOGIC HANDLING ---
     if (result.is_sky === false) {
@@ -239,53 +267,49 @@ function showModal(result, imgUrl) {
         iconDiv.classList.add('error');
         title.innerText = "Analisis Ditolak";
         desc.innerText = result.error || "Objek dalam foto bukan langit.";
-        fill.style.width = '0%'; fill.style.background = 'var(--danger)';
+        fill.style.width = '0%'; 
+        fill.style.background = 'var(--danger)';
         scoreTxt.innerText = '0%';
     } else {
         // SUCCESS PREDICTION
         const score = (result.score * 100).toFixed(1) + '%';
         fill.style.width = score;
         scoreTxt.innerText = score;
-        document.getElementById('modalLocation').innerText = result.location || '-';
+        const locEl = document.getElementById('modalLocation');
+        if(locEl) locEl.innerText = result.location || 'Lokasi tidak diketahui';
 
-        // 1. BAIK
         if (result.class_name === 'Baik') {
             iconDiv.innerHTML = '<i class="fas fa-smile-beam"></i>';
             iconDiv.classList.add('good');
             fill.style.background = 'var(--success)';
             title.innerText = "Udara Bersih (Baik)";
-            desc.innerText = "Kualitas udara sangat baik. Aman untuk beraktivitas di luar ruangan.";
-        } 
-        // 2. SEDANG
-        else if (result.class_name === 'Sedang') {
+            desc.innerText = "Kualitas udara sangat baik. Aman untuk beraktivitas.";
+        } else if (result.class_name === 'Sedang') {
             iconDiv.innerHTML = '<i class="fas fa-meh"></i>';
             iconDiv.classList.add('medium');
             fill.style.background = 'var(--warning)';
             title.innerText = "Udara Sedang";
-            desc.innerText = "Kualitas udara cukup baik, namun terdapat sedikit polusi. Aman bagi mayoritas orang.";
-        } 
-        // 3. TIDAK SEHAT BAGI SEBAGIAN ORANG (FULL TEXT)
-        else if (result.class_name === 'Tidak Sehat Bagi Sebagian Orang') {
+            desc.innerText = "Kualitas udara cukup baik, ada sedikit polusi.";
+        } else if (result.class_name && result.class_name.includes('Sebagian')) {
             iconDiv.innerHTML = '<i class="fas fa-head-side-mask"></i>';
             iconDiv.classList.add('sensitive');
             fill.style.background = 'var(--sensitive)';
-            title.innerText = "Tidak Sehat Bagi Sebagian Orang";
-            desc.innerText = "Udara ini beresiko bagi kelompok rentan seperti lansia, anak-anak, dan penderita penyakit pernapasan. Kurangi aktivitas berat.";
-        } 
-        // 4. TIDAK SEHAT
-        else {
+            title.innerText = "Tidak Sehat (Sensitif)";
+            desc.innerText = "Beresiko bagi kelompok rentan (anak/lansia).";
+        } else {
             iconDiv.innerHTML = '<i class="fas fa-biohazard"></i>';
             iconDiv.classList.add('bad');
             fill.style.background = 'var(--danger)';
             title.innerText = "Udara Tidak Sehat";
-            desc.innerText = "Tingkat polusi tinggi. Berbahaya bagi kesehatan. Wajib gunakan masker jika keluar ruangan.";
+            desc.innerText = "Tingkat polusi tinggi. Gunakan masker!";
         }
     }
     
-    modalOverlay.classList.add('active');
+    if(modalOverlay) modalOverlay.classList.add('active');
 }
 
-function closeModal() {
-    modalOverlay.classList.remove('active');
-    removeFile();
+// Global function
+window.closeModal = function() {
+    if(modalOverlay) modalOverlay.classList.remove('active');
+    window.removeFile();
 }
